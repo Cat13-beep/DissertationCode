@@ -1,0 +1,53 @@
+#load library
+library(ggplot2)
+
+# Enter the peptide names
+conditions <- c("Condition A", "Condition B", "Control")
+
+# Enter the average monomer fractions
+mean_values <- c(0.55, 0.15, 0.02) 
+
+# Enter the  Standard Deviations for each condition
+sd_values   <- c(0.04, 0.02, 0.01)
+
+# Set the colors (e.g.,  Yellow, Custom Magenta, Grey)- for the custom peptide figure, for example
+plot_colors <- c(
+  "Condition A" = "#FDE725", 
+  "Condition B" = "#C000C0", 
+  "Control"     = "#D9D9D9"
+)
+
+# X-axis and Y-axis labels
+x_label <- "Inhibitory Peptide"
+y_label <- "Monomer Fraction"
+
+# PREPARE DATA FRAME
+df_summary <- data.frame(
+  Species = factor(conditions, levels = conditions),
+  Mean_Frac = mean_values,
+  SD_Frac = sd_values
+)
+
+# GENERATE THE PLOT
+ggplot(df_summary, aes(x = Species, y = Mean_Frac, fill = Species)) +
+  
+
+  geom_col(color = "black", width = 0.7, linewidth = 0.8, show.legend = FALSE) +
+  
+# Error bars
+geom_errorbar(aes(ymin = Mean_Frac - SD_Frac, ymax = Mean_Frac + SD_Frac), 
+                width = 0.15, linewidth = 0.8) +
+  
+# Scale
+  scale_fill_manual(values = plot_colors) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 1.0)) +
+  labs(x = x_label, y = y_label) +
+  
+  # Aesthetics
+  theme_classic() + 
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 11),
+    axis.text.y = element_text(color = "black", size = 11),
+    axis.title  = element_text(face = "bold", size = 12),
+    plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")
+  )
