@@ -1,0 +1,71 @@
+#Code can be modified by adding the predicted energy scores (applicable to both LptH and LptD with the different thanatins)
+
+# load libraries
+library(ggplot2)
+library(viridis)
+
+# build the data frame- left blank, but can include the predicted energy binding scores from Prodigy in the places marked by numbers 1,1,1,1 (for models of first ortholog)
+raw_thanatin_data <- data.frame(
+  Peptide = c(
+    "Podisus maculiventris",   # Canonical
+    "Murgantia histrionica",   # MH
+    "Chinavia ubica",          # CU
+    "Aelia acuminata 1",       # AA1
+    "Halymorpha halys",        # HH
+    "Piezodorus guildinii",    # PG
+    "Shewanella",              # Shew
+    "Anasa tristis",           # AT
+    "Riptortus pedestris 2",   # RIP2
+    "Riptortus pedestris 1",   # RIP1
+    "Aelia acuminata 2",       # AA2
+    "Chinavia impicticornis",  # CI
+    "Dichelops melacanthus",   # DM
+    "Stiretrus anchorago",     # SA
+    "Nezara viridula 2",       # NV2
+    "Nezara viridula 1"        # nez1
+  ),
+E1 = c(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P),
+E2 = c(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P),
+E3 = c(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P),
+E4 = c(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)
+)
+
+# Put into long format
+long_thanatin_data <- reshape(raw_thanatin_data, 
+                              varying = c("E1", "E2", "E3", "E4"), 
+                              v.names = "Energy", 
+                              timevar = "Model", 
+                              direction = "long")
+
+# order along x-axis based on predicted energy scores
+pep_medians <- aggregate(Energy ~ Peptide, data = long_thanatin_data, FUN = median)
+ordered_peptides <- pep_medians[order(pep_medians$Energy), "Peptide"]
+long_thanatin_data$Peptide <- factor(long_thanatin_data$Peptide, levels = ordered_peptides)
+
+# bold for the peptides I ordered, changing the aesthetics of the plot, including a colour blind friendly colour palette
+
+bold_list <- c("Podisus maculiventris", "Halymorpha halys", "Aelia acuminata 1", "Chinavia ubica", "Murgantia histrionica")
+
+label_faces <- ifelse(levels(long_thanatin_data$Peptide) %in% bold_list, "bold.italic", "italic")
+
+ggplot(long_thanatin_data, aes(x = Peptide, y = Energy, fill = Peptide)) +
+  geom_boxplot(color = "black", outlier.shape = NA, alpha = 0.85, size = 0.7) +
+  geom_jitter(color = "black", alpha = 0.5, width = 0.12, size = 1.3) +
+  scale_fill_viridis_d(option = "viridis") + 
+  labs(title = NULL,  # Removed Title
+       x = "Thanatin Species",
+       y = expression(bold(paste("Predicted Binding Energy ", Delta, "G (kcal mol"^-1, ")")))) +
+  theme_classic() + 
+  theme(
+    legend.position = "none",
+    text = element_text(color = "black"),
+    # axis.title.x adjusted with margin to create separation
+    axis.title.x = element_text(face = "bold", color = "black", margin = margin(t = 15)),
+    axis.title.y = element_text(face = "bold", color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1, face = label_faces, color = "black", size = 10),
+    axis.text.y = element_text(color = "black"),
+    axis.line = element_line(color = "black"),
+    panel.grid.major.y = element_line(color = "gray95")
+  ) +
+  coord_cartesian(ylim = c(-9.1, -6.6)) +
+  scale_y_continuous(breaks = seq(-9, -6.5, by = 0.5))
