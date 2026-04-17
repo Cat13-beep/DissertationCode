@@ -1,0 +1,58 @@
+#load library
+library(ggplot2)
+
+# Add your file to the repo and enter the name here
+input_file <- "YOUR_DATA_FILE.txt"  
+plot_title <- "Native Mass Spectrometry Spectrum"
+x_limits   <- c(2000, 10000)
+y_limits   <- c(0, 125)
+
+# Define peak markers: m/z, height, labels, and Species
+# For LptH Use "Species1" for all rows
+# For LptDE Use "LptD", "LptDE", 
+peak_data <- data.frame(
+  mz      = c(3336, 5927, 6166),          # m/z positions
+  y_pos   = c(105, 102, 42),              # Peak heights
+  label   = c("M (5+)", "D (17+)", "DE"), # Text labels
+  Species = factor(c("Sp1", "Sp2", "Sp3")) # Groups for colors/shapes. For just LptH, only one colour is needed.
+)
+
+# Define aesthetics 
+# For LptH, you can just set these all to black
+spec_colors <- c("Sp1" = "#440154", "Sp2" = "#21908C", "Sp3" = "#FDE725")
+spec_shapes <- c("Sp1" = 21, "Sp2" = 24, "Sp3" = 23)--
+
+# LOAD AND PREPARE DATA
+data <- read.table(input_file, header = FALSE)
+colnames(data) <- c("mz", "Intensity")
+
+# Baseline grounding 
+data$Intensity <- data$Intensity - min(data$Intensity)
+data$Intensity <- (data$Intensity / max(data$Intensity)) * 100
+
+# GENERATE PLOT
+ggplot(data, aes(x = mz, y = Intensity)) +
+  # The Spectrum Line
+  geom_line(color = "black", linewidth = 0.3) +
+  
+# The Text Labels
+  geom_text(data = peak_data, aes(x = mz, y = y_pos, label = label), 
+            vjust = -1.5, fontface = "bold", size = 3) +
+  
+# Applying the Custom Palettes
+  scale_fill_manual(values = spec_colors) +
+  scale_shape_manual(values = spec_shapes) +
+  
+# Formatting Axes
+  scale_x_continuous(expand = c(0,0), limits = x_limits, 
+                     name = expression(bold(italic("m/z") ~ "(Th)"))) +
+  scale_y_continuous(expand = c(0,0), limits = y_limits, 
+                     breaks = seq(0, 100, 25), name = "Relative Intensity (%)") +
+  
+  # Aesthetics
+  theme_classic() +
+  theme(
+    legend.position = "none", # Set to "right" if you want a legend
+    axis.text = element_text(color = "black"),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14)
+  )
