@@ -1,0 +1,79 @@
+# load libraries
+library(ggplot2)
+library(dplyr)
+
+# List your filenames here
+filenames <- c("FILE_1.txt", "FILE_2.txt", "FILE_3.txt")
+
+# List the corresponding labels (protein names, so that they should be in the stacked plot)
+labels <- c("Condition A", "Condition B", "Condition C")
+
+# Define m/z regions for structural shading 
+shading_regions <- data.frame(
+  start = c(2350, 2600, 2950, 3250),
+  end   = c(2480, 2850, 3100, 3450)
+)
+
+# Define color palette (viridis palette)
+custom_colors <- c(
+  "Condition A" = "#000000",
+  "Condition B" = "#55C667", 
+  "Condition C" = "#238A8D"
+)
+
+# Plot Limits
+mz_range <- c(2200, 4200)
+
+# 2. DATA LOADING & PROCESSING
+full_df <- data.frame()
+
+for (i in seq_along(filenames)) {
+  if (file.exists(filenames[i])) {
+    temp_data <- read.table(filenames[i], header = FALSE)
+    colnames(temp_data) <- c("mz", "Intensity")
+    
+# Add grouping info
+    temp_data$Condition <- labels[i]
+    
+# Normalize to base peak (100%)
+    temp_data$Intensity <- (temp_data$Intensity / max(temp_data$Intensity)) * 100
+    
+    full_df <- rbind(full_df, temp_data)
+  }
+}
+
+# Ensure the plot follows the order of your 'labels' list
+full_df$Condition <- factor(full_df$Condition, levels = labels)
+
+# produce plot
+ms_stacked_plot <- ggplot(full_df, aes(x = mz, y = Intensity, color = Condition)) +
+  
+# Shading for key peaks
+  annotate("rect", xmin = shading_regions$start, xmax = shading_regions$end, 
+           ymin = -Inf, ymax = Inf, fill = "gray90", alpha = 0.6) +
+  
+  geom_line(linewidth = 0.4) +
+  
+# Create stacked plot, and aesthetics
+  facet_grid(Condition ~ ., switch = "y") + 
+  
+  scale_color_manual(values = custom_colors) +
+  scale_x_continuous(expand = c(0,0), limits = mz_range) +
+  scale_y_continuous(expand = c(0,0), breaks = c(0, 100), labels = c("0", "100")) +
+  
+  labs(x = expression(bold(italic(m/z))), 
+       y = "Relative Intensity (%)") +
+  
+  theme_minimal() +
+  theme(
+    panel.spacing = unit(0, "lines"), 
+    panel.grid = element_blank(),
+    strip.text.y.left = element_text(angle = 0, hjust = 1, face = "bold.italic", size = 9), 
+    axis.line.x = element_line(color = "black"),
+    axis.ticks.x = element_line(color = "black"),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none"
+  )
+
+# display figure
+print(ms_stacked_plot)
