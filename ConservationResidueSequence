@@ -1,0 +1,67 @@
+#Load librarys
+library(ggplot2)
+library(viridis)
+library(dplyr)
+
+#Input your data file for Consurf conservation/ or input data directly here by using raw_text <- ""
+# Replace with your data file. 
+input_file <- "consurf_data.txt" 
+plot_title <- "Protein Conservation Ribbon Map"
+
+# How many amino acids to show per row (aesthetics)
+residues_per_row <- 37
+
+# Colors Set your color scale (Viridi) Different color for high/low conservation
+low_color  <- "cornflowerblue"
+high_color <- "yellow"         
+
+# DATA PREPARATION
+# Load your data (Skip this if you are pasting raw text)
+if (file.exists(input_file)) {
+  plot_data <- read.table(input_file, header = FALSE)
+  colnames(plot_data) <- c("SEQ", "AA", "INFO", "SCORE", "COLOR_NUM")
+} else {
+  # Note: If running locally without a file, ensure plot_data is already defined
+  stop("Input file not found. Please provide a valid data source.")
+}
+
+# COORDINATE CALCULATION
+# This math wraps the long sequence into rows
+plot_data <- plot_data %>%
+  mutate(
+    Row = (SEQ - 1) %/% residues_per_row + 1,
+    Column = (SEQ - 1) %% residues_per_row + 1
+  )
+
+# GENERATE THE  PLOT
+conservation_plot <- ggplot(plot_data) +
+  # Create the colored boxes
+  geom_tile(aes(x = Column, y = -Row, fill = COLOR_NUM), color = "white", linewidth = 0.1) +
+  
+  # Add the Amino Acid letters
+  geom_text(aes(x = Column, y = -Row, label = AA), 
+            size = 2.5, fontface = "bold", color = "black") +
+  
+  # coloration 
+  scale_fill_gradient(
+    low = low_color, 
+    high = high_color, 
+    name = "Conservation Grade",
+    breaks = c(1, 5, 9),
+    labels = c("1 (Variable)", "5", "9 (Conserved)")
+  ) +
+  
+  # aesthetics
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.key.width = unit(2, "cm"),
+    legend.title = element_text(size = 10, face = "bold"),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14, margin = margin(b = 10)),
+    plot.margin = margin(20, 20, 20, 20),
+    aspect.ratio = (max(plot_data$Row) * 1.5) / residues_per_row # Auto-adjusts height
+  ) +
+  labs(title = plot_title)
+
+# displat plot
+print(conservation_plot)
